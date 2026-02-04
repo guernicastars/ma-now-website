@@ -4,6 +4,7 @@ import {
   NegotiationType,
   LocationType,
   BookingDuration,
+  LocationWithAddress,
 } from '@ma-consultant/shared';
 
 interface BookingState {
@@ -15,6 +16,7 @@ interface BookingState {
   startDate: Date | null;
   duration: BookingDuration | null;
   locationType: LocationType | null;
+  location: LocationWithAddress | null;
   ndaDetails: {
     firstName: string;
     lastName: string;
@@ -30,6 +32,7 @@ interface BookingState {
   setNegotiationType: (type: NegotiationType) => void;
   setDateAndDuration: (date: Date, duration: BookingDuration) => void;
   setLocationType: (type: LocationType) => void;
+  setLocation: (location: LocationWithAddress) => void;
   setNDADetails: (details: { firstName: string; lastName: string; email: string }) => void;
   setBookingId: (id: string) => void;
   calculateTotalAmount: () => number;
@@ -44,6 +47,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   startDate: null,
   duration: null,
   locationType: null,
+  location: null,
   ndaDetails: null,
   bookingId: null,
   totalAmount: 0,
@@ -55,6 +59,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       startDate: null,
       duration: null,
       locationType: null,
+      location: null,
       ndaDetails: null,
       bookingId: null,
       totalAmount: 0,
@@ -79,6 +84,10 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     set({ locationType: type });
   },
 
+  setLocation: (location) => {
+    set({ location });
+  },
+
   setNDADetails: (details) => {
     set({ ndaDetails: details });
   },
@@ -100,6 +109,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       startDate: null,
       duration: null,
       locationType: null,
+      location: null,
       ndaDetails: null,
       bookingId: null,
       totalAmount: 0,

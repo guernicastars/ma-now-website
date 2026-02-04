@@ -1,80 +1,45 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
-import { RegisterUserData, UserCredentials } from '@ma-consultant/shared';
+import { asyncHandler } from '../middleware';
 
 export class AuthController {
-  static async register(req: Request, res: Response) {
-    try {
-      const data: RegisterUserData = req.body;
+  /**
+   * POST /api/auth/register
+   * Register a new user
+   */
+  static register = asyncHandler(async (req: Request, res: Response) => {
+    // Validation is done by middleware - req.body is already validated
+    const result = await AuthService.register(req.body);
 
-      // Basic validation
-      if (!data.email || !data.password || !data.firstName || !data.lastName) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required fields'
-        });
-      }
+    res.status(201).json({
+      success: true,
+      data: result,
+    });
+  });
 
-      const result = await AuthService.register(data);
+  /**
+   * POST /api/auth/login
+   * Login user and return JWT token
+   */
+  static login = asyncHandler(async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    const result = await AuthService.login(email, password);
 
-      res.status(201).json({
-        success: true,
-        data: result
-      });
-    } catch (error: any) {
-      console.error('Register error:', error);
-      res.status(400).json({
-        success: false,
-        error: error.message || 'Registration failed'
-      });
-    }
-  }
+    res.json({
+      success: true,
+      data: result,
+    });
+  });
 
-  static async login(req: Request, res: Response) {
-    try {
-      const { email, password }: UserCredentials = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email and password are required'
-        });
-      }
-
-      const result = await AuthService.login(email, password);
-
-      res.json({
-        success: true,
-        data: result
-      });
-    } catch (error: any) {
-      console.error('Login error:', error);
-      res.status(401).json({
-        success: false,
-        error: error.message || 'Login failed'
-      });
-    }
-  }
-
-  static async getCurrentUser(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Not authenticated'
-        });
-      }
-
-      res.json({
-        success: true,
-        data: req.user
-      });
-    } catch (error: any) {
-      console.error('Get current user error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to get user'
-      });
-    }
-  }
+  /**
+   * GET /api/auth/me
+   * Get current authenticated user
+   */
+  static getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
+    // User is attached by auth middleware
+    res.json({
+      success: true,
+      data: req.user,
+    });
+  });
 }

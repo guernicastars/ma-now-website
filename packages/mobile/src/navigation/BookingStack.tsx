@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ServiceTypeScreen } from '../screens/booking/ServiceTypeScreen';
 import { DateSelectionScreen } from '../screens/booking/DateSelectionScreen';
 import { LocationTypeScreen } from '../screens/booking/LocationTypeScreen';
+import { LocationPickerScreen } from '../screens/booking/LocationPickerScreen';
 import { NDAFormScreen } from '../screens/booking/NDAFormScreen';
 import { PaymentScreen } from '../screens/booking/PaymentScreen';
 import { ConfirmationScreen } from '../screens/booking/ConfirmationScreen';
@@ -12,6 +13,7 @@ export type BookingStackParamList = {
   ServiceType: undefined;
   DateSelection: undefined;
   LocationType: undefined;
+  LocationPicker: undefined;
   NDAForm: undefined;
   Payment: undefined;
   Confirmation: undefined;
@@ -48,6 +50,11 @@ export const BookingStack: React.FC = () => {
         options={{ title: 'Step 3: Meeting Type' }}
       />
       <Stack.Screen
+        name="LocationPicker"
+        component={LocationPickerScreen}
+        options={{ title: 'Step 3: Select Location' }}
+      />
+      <Stack.Screen
         name="NDAForm"
         component={NDAFormScreen}
         options={{ title: 'Step 4: NDA Signing' }}
@@ -62,8 +69,8 @@ export const BookingStack: React.FC = () => {
         component={ConfirmationScreen}
         options={{
           title: 'Booking Confirmed',
-          headerLeft: () => null, // Disable back button
-          gestureEnabled: false, // Disable swipe back
+          headerLeft: () => null,
+          gestureEnabled: false,
         }}
       />
     </Stack.Navigator>

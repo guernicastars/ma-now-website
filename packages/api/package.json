@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "ts-node src/scripts/seed.ts",
+    "migrate": "ts-node src/database/migrate.ts",
     "lint": "eslint src --ext .ts"
   },
   "keywords": [],
@@ -17,6 +18,7 @@
     "@ma-consultant/shared": "*",
     "express": "^4.21.2",
     "socket.io": "^4.8.1",
+    "pg": "^8.11.3",
     "lowdb": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
@@ -27,6 +29,7 @@
     "uuid": "^11.0.6"
   },
   "devDependencies": {
+    "@types/pg": "^8.10.9",
     "@types/express": "^5.0.0",
     "@types/node": "^20.17.12",
     "@types/jsonwebtoken": "^9.0.7",

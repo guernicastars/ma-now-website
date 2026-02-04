@@ -1,126 +1,89 @@
 import { Request, Response } from 'express';
 import { ConsultantService } from '../services/consultant.service';
 import { NearbyConsultantsQuery } from '@ma-consultant/shared';
+import { asyncHandler, NotFoundError, ForbiddenError } from '../middleware';
 
 export class ConsultantController {
-  static async getNearbyConsultants(req: Request, res: Response) {
-    try {
-      const { lat, lng, radius, specialization, minRating, maxHourlyRate, availability } = req.query;
+  /**
+   * GET /api/consultants/nearby
+   * Get nearby consultants based on location and filters
+   */
+  static getNearbyConsultants = asyncHandler(async (req: Request, res: Response) => {
+    // Validation is done by middleware - query params are already validated
+    const { lat, lng, radius, specialization, minRating, maxHourlyRate, availability } = req.query;
 
-      // Validate required parameters
-      if (!lat || !lng) {
-        return res.status(400).json({
-          success: false,
-          error: 'Latitude and longitude are required'
-        });
-      }
+    const query: NearbyConsultantsQuery = {
+      lat: parseFloat(lat as string),
+      lng: parseFloat(lng as string),
+      radius: radius ? parseInt(String(radius)) : undefined,
+      specialization: specialization as any,
+      minRating: minRating ? parseFloat(String(minRating)) : undefined,
+      maxHourlyRate: maxHourlyRate ? parseInt(String(maxHourlyRate)) : undefined,
+      availability: availability as any,
+    };
 
-      const query: NearbyConsultantsQuery = {
-        lat: parseFloat(lat as string),
-        lng: parseFloat(lng as string),
-        radius: radius ? parseInt(String(radius)) : undefined,
-        specialization: specialization as any,
-        minRating: minRating ? parseFloat(String(minRating)) : undefined,
-        maxHourlyRate: maxHourlyRate ? parseInt(String(maxHourlyRate)) : undefined,
-        availability: availability as any
-      };
+    const consultants = await ConsultantService.getNearbyConsultants(query);
 
-      const consultants = await ConsultantService.getNearbyConsultants(query);
+    res.json({
+      success: true,
+      data: consultants,
+      count: consultants.length,
+    });
+  });
 
-      res.json({
-        success: true,
-        data: consultants,
-        count: consultants.length
-      });
-    } catch (error: any) {
-      console.error('Get nearby consultants error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get consultants'
-      });
+  /**
+   * GET /api/consultants/:id
+   * Get a specific consultant by ID
+   */
+  static getConsultantById = asyncHandler(async (req: Request, res: Response) => {
+    const consultant = await ConsultantService.getConsultantById(req.params.id);
+
+    if (!consultant) {
+      throw NotFoundError('Consultant not found');
     }
-  }
 
-  static async getConsultantById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+    res.json({
+      success: true,
+      data: consultant,
+    });
+  });
 
-      const consultant = await ConsultantService.getConsultantById(String(id));
+  /**
+   * POST /api/consultants/:id/location
+   * Update consultant location (protected - consultants only)
+   */
+  static updateLocation = asyncHandler(async (req: Request, res: Response) => {
+    // Validation is done by middleware - body is already validated
+    const { latitude, longitude } = req.body;
 
-      if (!consultant) {
-        return res.status(404).json({
-          success: false,
-          error: 'Consultant not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        data: consultant
-      });
-    } catch (error: any) {
-      console.error('Get consultant error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get consultant'
-      });
+    // Verify user is the consultant
+    if (req.user?.role !== 'consultant') {
+      throw ForbiddenError('Only consultants can update their location');
     }
-  }
 
-  static async updateLocation(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const { latitude, longitude } = req.body;
+    await ConsultantService.updateLocation(req.params.id, {
+      latitude,
+      longitude,
+      timestamp: new Date().toISOString(),
+    });
 
-      if (!latitude || !longitude) {
-        return res.status(400).json({
-          success: false,
-          error: 'Latitude and longitude are required'
-        });
-      }
+    res.json({
+      success: true,
+      message: 'Location updated successfully',
+    });
+  });
 
-      // Verify user is the consultant
-      if (req.user?.role !== 'consultant') {
-        return res.status(403).json({
-          success: false,
-          error: 'Only consultants can update their location'
-        });
-      }
+  /**
+   * GET /api/consultants
+   * Get all consultants (admin/internal use)
+   */
+  static getAllConsultants = asyncHandler(async (req: Request, res: Response) => {
+    const consultants = await ConsultantService.getAllConsultants();
 
-      await ConsultantService.updateLocation(String(id), {
-        latitude,
-        longitude,
-        timestamp: new Date().toISOString()
-      });
-
-      res.json({
-        success: true,
-        message: 'Location updated successfully'
-      });
-    } catch (error: any) {
-      console.error('Update location error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to update location'
-      });
-    }
-  }
-
-  static async getAllConsultants(req: Request, res: Response) {
-    try {
-      const consultants = await ConsultantService.getAllConsultants();
-
-      res.json({
-        success: true,
-        data: consultants,
-        count: consultants.length
-      });
-    } catch (error: any) {
-      console.error('Get all consultants error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get consultants'
-      });
-    }
-  }
+    res.json({
+      success: true,
+      data: consultants,
+      count: consultants.length,
+    });
+  });
 }

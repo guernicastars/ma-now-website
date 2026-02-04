@@ -1,139 +1,77 @@
 import { Request, Response } from 'express';
 import { BookingService } from '../services/booking.service';
-import { CreateBookingData, BookingStatus } from '@ma-consultant/shared';
+import { asyncHandler, NotFoundError } from '../middleware';
 
 export class BookingController {
-  static async createBooking(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-        });
-      }
+  /**
+   * POST /api/bookings
+   * Create a new booking
+   */
+  static createBooking = asyncHandler(async (req: Request, res: Response) => {
+    // Validation is done by middleware
+    const booking = await BookingService.createBooking(req.user!.id, req.body);
 
-      const data: CreateBookingData = req.body;
+    res.status(201).json({
+      success: true,
+      data: booking,
+    });
+  });
 
-      // Validate required fields
-      if (
-        !data.consultantId ||
-        !data.negotiationType ||
-        !data.startDate ||
-        !data.duration ||
-        !data.locationType ||
-        !data.ndaDetails
-      ) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required fields',
-        });
-      }
+  /**
+   * GET /api/bookings
+   * Get all bookings for current user
+   */
+  static getUserBookings = asyncHandler(async (req: Request, res: Response) => {
+    const bookings = await BookingService.getUserBookings(req.user!.id);
 
-      const booking = await BookingService.createBooking(req.user.id, data);
+    res.json({
+      success: true,
+      data: bookings,
+    });
+  });
 
-      res.status(201).json({
-        success: true,
-        data: booking,
-      });
-    } catch (error: any) {
-      console.error('Create booking error:', error);
-      res.status(400).json({
-        success: false,
-        error: error.message || 'Failed to create booking',
-      });
+  /**
+   * GET /api/bookings/:id
+   * Get a specific booking by ID
+   */
+  static getBookingById = asyncHandler(async (req: Request, res: Response) => {
+    const booking = await BookingService.getBookingById(req.params.id, req.user!.id);
+
+    if (!booking) {
+      throw NotFoundError('Booking not found');
     }
-  }
 
-  static async getUserBookings(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-        });
-      }
+    res.json({
+      success: true,
+      data: booking,
+    });
+  });
 
-      const bookings = await BookingService.getUserBookings(req.user.id);
+  /**
+   * PATCH /api/bookings/:id/status
+   * Update booking status
+   */
+  static updateBookingStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { status } = req.body;
 
-      res.json({
-        success: true,
-        data: bookings,
-      });
-    } catch (error: any) {
-      console.error('Get user bookings error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch bookings',
-      });
-    }
-  }
+    await BookingService.updateStatus(req.params.id, req.user!.id, status);
 
-  static async getBookingById(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-        });
-      }
+    res.json({
+      success: true,
+      message: 'Booking status updated',
+    });
+  });
 
-      const { id } = req.params;
-      const booking = await BookingService.getBookingById(
-        String(id),
-        req.user.id
-      );
+  /**
+   * DELETE /api/bookings/:id
+   * Cancel a booking
+   */
+  static cancelBooking = asyncHandler(async (req: Request, res: Response) => {
+    await BookingService.cancelBooking(req.params.id, req.user!.id);
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          error: 'Booking not found',
-        });
-      }
-
-      res.json({
-        success: true,
-        data: booking,
-      });
-    } catch (error: any) {
-      console.error('Get booking error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch booking',
-      });
-    }
-  }
-
-  static async updateBookingStatus(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = req.params;
-      const { status }: { status: BookingStatus } = req.body;
-
-      if (!status) {
-        return res.status(400).json({
-          success: false,
-          error: 'Status is required',
-        });
-      }
-
-      await BookingService.updateStatus(String(id), req.user.id, status);
-
-      res.json({
-        success: true,
-        message: 'Booking status updated',
-      });
-    } catch (error: any) {
-      console.error('Update booking status error:', error);
-      res.status(400).json({
-        success: false,
-        error: error.message || 'Failed to update booking',
-      });
-    }
-  }
+    res.json({
+      success: true,
+      message: 'Booking cancelled',
+    });
+  });
 }

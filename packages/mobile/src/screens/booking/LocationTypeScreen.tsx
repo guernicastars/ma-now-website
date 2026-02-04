@@ -35,7 +35,13 @@ export const LocationTypeScreen: React.FC<LocationTypeScreenProps> = ({ navigati
 
   const handleContinue = () => {
     if (locationType) {
-      navigation.navigate('NDAForm');
+      if (locationType === 'onsite') {
+        // For onsite meetings, go to location picker first
+        navigation.navigate('LocationPicker');
+      } else {
+        // For virtual meetings, skip location picker
+        navigation.navigate('NDAForm');
+      }
     }
   };
 

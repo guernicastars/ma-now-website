@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+.npm-cache/
+
+# expo
+.expo/
 /.pnp
 .pnp.*
 .yarn/*

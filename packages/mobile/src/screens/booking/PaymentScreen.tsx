@@ -16,6 +16,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation }) => {
     startDate,
     duration,
     locationType,
+    location,
     ndaDetails,
     totalAmount,
     setBookingId,
@@ -39,6 +40,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation }) => {
         startDate: startDate.toISOString(),
         duration,
         locationType,
+        location: location || undefined,
         ndaDetails: {
           firstName: ndaDetails.firstName,
           lastName: ndaDetails.lastName,
@@ -119,6 +121,15 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation }) => {
               {locationType === 'virtual' ? 'Virtual Meeting' : 'On-site Meeting'}
             </Text>
           </View>
+
+          {location && locationType === 'onsite' && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.label}>Location:</Text>
+              <Text style={[styles.value, styles.locationText]} numberOfLines={2}>
+                {location.address?.city}, {location.address?.country}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.summaryRow}>
             <Text style={styles.label}>Hourly Rate:</Text>
@@ -212,6 +223,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     textAlign: 'right',
+  },
+  locationText: {
+    fontSize: 13,
   },
   totalRow: {
     marginTop: Spacing.md,

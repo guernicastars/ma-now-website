@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { initializeSocket } from './websocket/socketServer';
 import { registerRoutes } from './routes';
 import { locationSimulator } from './services/locationSimulator.service';
+import * as db from './database';
 
 dotenv.config();
 
@@ -21,8 +22,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  const dbHealth = await db.healthCheck();
+  res.json({
+    status: dbHealth.ok ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    database: {
+      type: dbHealth.type,
+      connected: dbHealth.ok,
+    },
+  });
 });
 
 // Root endpoint

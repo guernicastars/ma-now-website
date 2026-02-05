@@ -1,134 +1,146 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Linking,
 } from 'react-native';
-import { MapViewComponent } from '../../components/Map/MapView';
-import { ConsultantCard } from '../../components/Consultant/ConsultantCard';
-import { Button, ConnectionStatus } from '../../components/UI';
+import { Button, Card, Input } from '../../components/UI';
 import { Colors, Spacing, Typography } from '../../constants';
-import { useLocation } from '../../hooks/useLocation';
-import { useConsultants } from '../../hooks/useConsultants';
-import { useWebSocket } from '../../hooks/useWebSocket';
-import { useRealtimeConsultants } from '../../hooks/useRealtimeConsultants';
-import { useBookingStore } from '../../store/bookingStore';
+import { useAuthStore } from '../../store/authStore';
 
 interface HomeScreenProps {
   navigation: any;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { userLocation, permissionStatus } = useLocation();
-  const {
-    consultants,
-    selectedConsultant,
-    isLoading,
-    error,
-    setSelectedConsultant,
-    refetch,
-  } = useConsultants();
+  const { user } = useAuthStore();
+  const [meetingSlug, setMeetingSlug] = useState('');
 
-  // WebSocket integration
-  const { connectionStatus, isConnected } = useWebSocket();
-  const { isSubscribed } = useRealtimeConsultants(isConnected);
+  const handleBookMeeting = () => {
+    const slug = meetingSlug.trim().toLowerCase();
 
-  // Booking store
-  const startBooking = useBookingStore((state) => state.startBooking);
+    if (!slug) {
+      Alert.alert('Required', 'Please enter a meeting link or code.');
+      return;
+    }
 
-  const handleBookConsultant = (consultant: any) => {
-    startBooking(consultant);
-    navigation.navigate('Booking', { screen: 'ServiceType' });
+    // Extract slug from URL if full URL was pasted
+    let finalSlug = slug;
+    if (slug.includes('/')) {
+      const parts = slug.split('/');
+      finalSlug = parts[parts.length - 1];
+    }
+
+    // Navigate to booking flow with the slug
+    navigation.navigate('Booking', {
+      screen: 'SlotSelection',
+      params: { slug: finalSlug },
+    });
   };
 
-  if (permissionStatus === 'denied') {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorTitle}>Location Permission Required</Text>
-        <Text style={styles.errorText}>
-          Please enable location permissions to find consultants near you
-        </Text>
-      </View>
+  const handleScanQR = () => {
+    // TODO: Implement QR code scanning
+    Alert.alert(
+      'Coming Soon',
+      'QR code scanning will be available in a future update.'
     );
-  }
-
-  if (!userLocation) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Getting your location...</Text>
-      </View>
-    );
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Map View */}
-      <View style={styles.mapContainer}>
-        <MapViewComponent
-          userLocation={userLocation}
-          consultants={consultants}
-          selectedConsultant={selectedConsultant}
-          onSelectConsultant={setSelectedConsultant}
-        />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Welcome Section */}
+      <View style={styles.welcomeSection}>
+        <Text style={styles.welcomeText}>
+          Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!
+        </Text>
+        <Text style={styles.subtitle}>
+          Book a consultation with an M&A expert
+        </Text>
       </View>
 
-      {/* Bottom Sheet with Consultant List */}
-      <View style={styles.bottomSheet}>
-        <View style={styles.sheetHandle} />
-        <View style={styles.sheetHeader}>
-          <View style={styles.headerRow}>
-            <Text style={styles.sheetTitle}>
-              Nearby Consultants ({consultants.length})
-            </Text>
-            <ConnectionStatus status={connectionStatus} />
-          </View>
-          {error && <Text style={styles.errorText}>{error}</Text>}
+      {/* Book by Link/Code */}
+      <Card style={styles.bookingCard}>
+        <Text style={styles.cardTitle}>Book a Meeting</Text>
+        <Text style={styles.cardDescription}>
+          Enter the meeting link or code provided by your consultant
+        </Text>
+
+        <View style={styles.inputRow}>
+          <Input
+            value={meetingSlug}
+            onChangeText={setMeetingSlug}
+            placeholder="e.g., john-doe-consultation"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
         </View>
 
-        {isLoading && consultants.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={Colors.primary} />
+        <Button
+          title="Find Available Times"
+          onPress={handleBookMeeting}
+          disabled={!meetingSlug.trim()}
+          fullWidth
+        />
+
+        <TouchableOpacity style={styles.qrButton} onPress={handleScanQR}>
+          <Text style={styles.qrButtonText}>Scan QR Code</Text>
+        </TouchableOpacity>
+      </Card>
+
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => navigation.navigate('Bookings')}
+        >
+          <View style={styles.actionIcon}>
+            <Text style={styles.actionEmoji}>📅</Text>
           </View>
-        ) : (
-          <FlatList
-            data={consultants}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <ConsultantCard
-                consultant={item}
-                onPress={() => handleBookConsultant(item)}
-              />
-            )}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={isLoading}
-                onRefresh={refetch}
-                tintColor={Colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
-                  No consultants found nearby
-                </Text>
-                <Button
-                  title="Refresh"
-                  variant="outline"
-                  onPress={refetch}
-                  style={styles.refreshButton}
-                />
-              </View>
-            }
-          />
-        )}
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>My Bookings</Text>
+            <Text style={styles.actionDescription}>
+              View and manage your scheduled meetings
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <View style={styles.actionIcon}>
+            <Text style={styles.actionEmoji}>👤</Text>
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Profile</Text>
+            <Text style={styles.actionDescription}>
+              Update your account settings
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
-    </View>
+
+      {/* Help Section */}
+      <Card style={styles.helpCard}>
+        <Text style={styles.helpTitle}>Need Help?</Text>
+        <Text style={styles.helpText}>
+          If you don't have a meeting code, please contact your M&A consultant
+          directly to get their booking link.
+        </Text>
+        <TouchableOpacity
+          onPress={() => Linking.openURL('mailto:support@manow.app')}
+        >
+          <Text style={styles.helpLink}>Contact Support</Text>
+        </TouchableOpacity>
+      </Card>
+    </ScrollView>
   );
 };
 
@@ -137,88 +149,112 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+  content: {
     padding: Spacing.lg,
   },
-  mapContainer: {
-    flex: 1,
+  welcomeSection: {
+    marginBottom: Spacing.xl,
   },
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: Spacing.sm,
-  },
-  sheetHeader: {
-    padding: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  welcomeText: {
+    ...Typography.h1,
+    color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
-  sheetTitle: {
-    ...Typography.h3,
-    color: Colors.text.primary,
-  },
-  listContent: {
-    padding: Spacing.md,
-    paddingTop: 0,
-  },
-  loadingText: {
+  subtitle: {
     ...Typography.body,
     color: Colors.text.secondary,
-    marginTop: Spacing.md,
   },
-  loadingContainer: {
-    padding: Spacing.xl,
-    alignItems: 'center',
+  bookingCard: {
+    marginBottom: Spacing.xl,
   },
-  emptyContainer: {
-    padding: Spacing.xl,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...Typography.body,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-  },
-  refreshButton: {
-    minWidth: 120,
-  },
-  errorTitle: {
+  cardTitle: {
     ...Typography.h2,
     color: Colors.text.primary,
-    marginBottom: Spacing.sm,
-    textAlign: 'center',
+    marginBottom: Spacing.xs,
   },
-  errorText: {
+  cardDescription: {
     ...Typography.body,
-    color: Colors.error,
-    textAlign: 'center',
+    color: Colors.text.secondary,
+    marginBottom: Spacing.lg,
+  },
+  inputRow: {
+    marginBottom: Spacing.md,
+  },
+  input: {
+    marginBottom: 0,
+  },
+  qrButton: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+  },
+  qrButtonText: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  quickActions: {
+    marginBottom: Spacing.xl,
+  },
+  sectionTitle: {
+    ...Typography.h3,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  actionEmoji: {
+    fontSize: 24,
+  },
+  actionContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  actionTitle: {
+    ...Typography.body,
+    color: Colors.text.primary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  actionDescription: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+  },
+  helpCard: {
+    backgroundColor: Colors.primary + '10',
+  },
+  helpTitle: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginBottom: Spacing.xs,
+  },
+  helpText: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
+  },
+  helpLink: {
+    ...Typography.caption,
+    color: Colors.primary,
+    fontWeight: '600',
   },
 });

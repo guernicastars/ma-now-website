@@ -21,11 +21,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   navigation,
 }) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     password: '',
-    phoneNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -34,14 +32,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
   const updateField = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
-    setErrors({ ...errors, [field]: undefined });
+    setErrors({ ...errors, [field]: '' });
   };
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!formData.firstName) newErrors.firstName = 'First name is required';
-    if (!formData.lastName) newErrors.lastName = 'Last name is required';
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -49,8 +48,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
     }
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
     }
 
     setErrors(newErrors);
@@ -63,8 +62,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
     setLoading(true);
     try {
       const response = await authApi.register({
-        ...formData,
-        role: 'client',
+        name: formData.name.trim(),
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
       });
       await setAuth(response);
     } catch (error: any) {
@@ -86,27 +86,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         <View style={styles.header}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>
-            Join us to find your perfect M&A consultant
+            Join us to book consultations with M&A experts
           </Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="First Name"
-            value={formData.firstName}
-            onChangeText={(text) => updateField('firstName', text)}
-            error={errors.firstName}
-            placeholder="John"
+            label="Full Name"
+            value={formData.name}
+            onChangeText={(text) => updateField('name', text)}
+            error={errors.name}
+            placeholder="John Doe"
             autoCapitalize="words"
-          />
-
-          <Input
-            label="Last Name"
-            value={formData.lastName}
-            onChangeText={(text) => updateField('lastName', text)}
-            error={errors.lastName}
-            placeholder="Doe"
-            autoCapitalize="words"
+            autoComplete="name"
           />
 
           <Input
@@ -118,14 +110,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-          />
-
-          <Input
-            label="Phone Number (Optional)"
-            value={formData.phoneNumber}
-            onChangeText={(text) => updateField('phoneNumber', text)}
-            placeholder="+1-555-0100"
-            keyboardType="phone-pad"
+            autoComplete="email"
           />
 
           <Input
@@ -133,9 +118,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             value={formData.password}
             onChangeText={(text) => updateField('password', text)}
             error={errors.password}
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             secureTextEntry
             autoCapitalize="none"
+            autoComplete="password-new"
           />
 
           <Button

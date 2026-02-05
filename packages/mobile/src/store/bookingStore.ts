@@ -1,118 +1,170 @@
 import { create } from 'zustand';
 import {
-  ConsultantWithDistance,
-  NegotiationType,
-  LocationType,
-  BookingDuration,
+  MeetingTypePublic,
+  TimeSlot,
+  SlotHold,
+  Booking,
   LocationWithAddress,
 } from '@ma-consultant/shared';
 
 interface BookingState {
-  // Consultant being booked
-  consultant: ConsultantWithDistance | null;
+  // Meeting type being booked
+  meetingType: MeetingTypePublic | null;
+  meetingTypeSlug: string | null;
 
-  // Booking form data
-  negotiationType: NegotiationType | null;
-  startDate: Date | null;
-  duration: BookingDuration | null;
-  locationType: LocationType | null;
+  // Selected slot
+  selectedSlot: TimeSlot | null;
+
+  // Slot hold (created after selecting slot)
+  hold: SlotHold | null;
+  holdExpiresAt: Date | null;
+
+  // Guest info
+  guestEmail: string | null;
+  guestName: string | null;
+  guestTimezone: string | null;
+  guestNotes: string | null;
+
+  // For onsite meetings
   location: LocationWithAddress | null;
-  ndaDetails: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  } | null;
 
-  // Booking result
-  bookingId: string | null;
-  totalAmount: number;
+  // NDA status (if required)
+  ndaRequired: boolean;
+  ndaSigned: boolean;
+  ndaSignUrl: string | null;
+
+  // Confirmed booking
+  booking: Booking | null;
+
+  // UI state
+  isLoading: boolean;
+  error: string | null;
 
   // Actions
-  startBooking: (consultant: ConsultantWithDistance) => void;
-  setNegotiationType: (type: NegotiationType) => void;
-  setDateAndDuration: (date: Date, duration: BookingDuration) => void;
-  setLocationType: (type: LocationType) => void;
+  startBooking: (meetingType: MeetingTypePublic, slug: string) => void;
+  selectSlot: (slot: TimeSlot) => void;
+  setHold: (hold: SlotHold) => void;
+  setGuestInfo: (info: { email: string; name: string; timezone: string; notes?: string }) => void;
   setLocation: (location: LocationWithAddress) => void;
-  setNDADetails: (details: { firstName: string; lastName: string; email: string }) => void;
-  setBookingId: (id: string) => void;
-  calculateTotalAmount: () => number;
+  setNdaSignUrl: (url: string) => void;
+  markNdaSigned: () => void;
+  setBooking: (booking: Booking) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
   resetBooking: () => void;
+  getHoldTimeRemaining: () => number | null; // seconds remaining
 }
 
-const HOURS_PER_DAY = 8; // Assume 8 hours per day of consultation
-
 export const useBookingStore = create<BookingState>((set, get) => ({
-  consultant: null,
-  negotiationType: null,
-  startDate: null,
-  duration: null,
-  locationType: null,
+  meetingType: null,
+  meetingTypeSlug: null,
+  selectedSlot: null,
+  hold: null,
+  holdExpiresAt: null,
+  guestEmail: null,
+  guestName: null,
+  guestTimezone: null,
+  guestNotes: null,
   location: null,
-  ndaDetails: null,
-  bookingId: null,
-  totalAmount: 0,
+  ndaRequired: false,
+  ndaSigned: false,
+  ndaSignUrl: null,
+  booking: null,
+  isLoading: false,
+  error: null,
 
-  startBooking: (consultant) => {
+  startBooking: (meetingType, slug) => {
     set({
-      consultant,
-      negotiationType: null,
-      startDate: null,
-      duration: null,
-      locationType: null,
+      meetingType,
+      meetingTypeSlug: slug,
+      ndaRequired: meetingType.requiresNda,
+      // Reset other fields
+      selectedSlot: null,
+      hold: null,
+      holdExpiresAt: null,
+      guestEmail: null,
+      guestName: null,
+      guestTimezone: null,
+      guestNotes: null,
       location: null,
-      ndaDetails: null,
-      bookingId: null,
-      totalAmount: 0,
+      ndaSigned: false,
+      ndaSignUrl: null,
+      booking: null,
+      error: null,
     });
   },
 
-  setNegotiationType: (type) => {
-    set({ negotiationType: type });
+  selectSlot: (slot) => {
+    set({ selectedSlot: slot });
   },
 
-  setDateAndDuration: (date, duration) => {
-    set({ startDate: date, duration });
-    // Recalculate total
-    const state = get();
-    if (state.consultant && duration) {
-      const total = state.consultant.hourlyRate * HOURS_PER_DAY * duration;
-      set({ totalAmount: total });
-    }
+  setHold: (hold) => {
+    set({
+      hold,
+      holdExpiresAt: new Date(hold.expiresAt),
+    });
   },
 
-  setLocationType: (type) => {
-    set({ locationType: type });
+  setGuestInfo: ({ email, name, timezone, notes }) => {
+    set({
+      guestEmail: email,
+      guestName: name,
+      guestTimezone: timezone,
+      guestNotes: notes || null,
+    });
   },
 
   setLocation: (location) => {
     set({ location });
   },
 
-  setNDADetails: (details) => {
-    set({ ndaDetails: details });
+  setNdaSignUrl: (url) => {
+    set({ ndaSignUrl: url });
   },
 
-  setBookingId: (id) => {
-    set({ bookingId: id });
+  markNdaSigned: () => {
+    set({ ndaSigned: true });
   },
 
-  calculateTotalAmount: () => {
-    const state = get();
-    if (!state.consultant || !state.duration) return 0;
-    return state.consultant.hourlyRate * HOURS_PER_DAY * state.duration;
+  setBooking: (booking) => {
+    set({ booking });
+  },
+
+  setLoading: (loading) => {
+    set({ isLoading: loading });
+  },
+
+  setError: (error) => {
+    set({ error });
   },
 
   resetBooking: () => {
     set({
-      consultant: null,
-      negotiationType: null,
-      startDate: null,
-      duration: null,
-      locationType: null,
+      meetingType: null,
+      meetingTypeSlug: null,
+      selectedSlot: null,
+      hold: null,
+      holdExpiresAt: null,
+      guestEmail: null,
+      guestName: null,
+      guestTimezone: null,
+      guestNotes: null,
       location: null,
-      ndaDetails: null,
-      bookingId: null,
-      totalAmount: 0,
+      ndaRequired: false,
+      ndaSigned: false,
+      ndaSignUrl: null,
+      booking: null,
+      isLoading: false,
+      error: null,
     });
+  },
+
+  getHoldTimeRemaining: () => {
+    const { holdExpiresAt } = get();
+    if (!holdExpiresAt) return null;
+
+    const now = new Date();
+    const remaining = Math.floor((holdExpiresAt.getTime() - now.getTime()) / 1000);
+    return remaining > 0 ? remaining : 0;
   },
 }));

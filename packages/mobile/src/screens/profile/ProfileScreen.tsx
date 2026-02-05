@@ -13,9 +13,7 @@ export const ProfileScreen: React.FC = () => {
       <Text style={styles.title}>Profile</Text>
       <View style={styles.info}>
         <Text style={styles.label}>Name:</Text>
-        <Text style={styles.value}>
-          {user?.firstName} {user?.lastName}
-        </Text>
+        <Text style={styles.value}>{user?.name}</Text>
       </View>
       <View style={styles.info}>
         <Text style={styles.label}>Email:</Text>

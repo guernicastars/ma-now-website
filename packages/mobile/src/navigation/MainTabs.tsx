@@ -30,7 +30,7 @@ export const MainTabs: React.FC = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          title: 'Find Consultants',
+          title: 'Book Meeting',
         }}
       />
       <Tab.Screen

@@ -1,13 +1,17 @@
-// API Configuration
+// API Configuration - Using manow backend
 export const API_BASE_URL = __DEV__
   ? 'http://localhost:3000/api'
-  : 'https://your-production-api.com/api';
+  : 'https://api.manow.app/api'; // TODO: Update with production URL
 
-export const SOCKET_URL = __DEV__
-  ? 'http://localhost:3000'
-  : 'https://your-production-api.com';
+// SSE endpoint for real-time updates (manow uses SSE instead of WebSockets)
+export const SSE_BASE_URL = __DEV__
+  ? 'http://localhost:3000/api/realtime'
+  : 'https://api.manow.app/api/realtime';
 
-export const STRIPE_PUBLISHABLE_KEY = 'pk_test_your_stripe_key';
+// PayPal Configuration (replacing Stripe)
+export const PAYPAL_CLIENT_ID = __DEV__
+  ? 'sandbox_client_id' // TODO: Add sandbox client ID
+  : 'production_client_id'; // TODO: Add production client ID
 
 // Map Configuration
 export const DEFAULT_REGION = {

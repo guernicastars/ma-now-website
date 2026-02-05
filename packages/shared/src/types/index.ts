@@ -1,14 +1,13 @@
-// User Types
-export type UserRole = 'client' | 'consultant' | 'admin';
+// ============ USER TYPES ============
+// Updated to match manow backend
 
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  role: UserRole;
-  createdAt: string;
+  name: string;
+  timezone?: string;
+  emailVerified?: boolean;
+  avatarUrl?: string;
 }
 
 export interface UserCredentials {
@@ -16,11 +15,11 @@ export interface UserCredentials {
   password: string;
 }
 
-export interface RegisterUserData extends UserCredentials {
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  role?: UserRole;
+export interface RegisterUserData {
+  email: string;
+  name: string;
+  password: string;
+  timezone?: string;
 }
 
 export interface AuthResponse {
@@ -28,7 +27,151 @@ export interface AuthResponse {
   token: string;
 }
 
-// Location Types
+// ============ MEETING TYPE TYPES ============
+// From manow backend
+
+export interface MeetingType {
+  id: string;
+  name: string;
+  slug: string;
+  durationMinutes: number;
+  bufferBeforeMinutes?: number;
+  bufferAfterMinutes?: number;
+  locationText?: string;
+  requiresNda: boolean;
+  ndaTemplateId?: string;
+  isActive: boolean;
+  userId: string;
+}
+
+export interface MeetingTypePublic {
+  id: string;
+  name: string;
+  slug: string;
+  durationMinutes: number;
+  locationText?: string;
+  requiresNda: boolean;
+  hostName: string;
+  hostTimezone?: string;
+}
+
+export interface CreateMeetingTypeData {
+  name: string;
+  slug: string;
+  durationMinutes: number;
+  bufferBeforeMinutes?: number;
+  bufferAfterMinutes?: number;
+  locationText?: string;
+  requiresNda?: boolean;
+  ndaTemplateId?: string;
+}
+
+// ============ AVAILABILITY TYPES ============
+
+export interface AvailabilityRule {
+  id: string;
+  meetingTypeId?: string;
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
+  effectiveFrom?: string;
+  effectiveUntil?: string;
+  isActive: boolean;
+}
+
+export interface BlackoutDate {
+  id: string;
+  blackoutDate: string; // YYYY-MM-DD
+  startTime?: string; // HH:MM
+  endTime?: string; // HH:MM
+  reason?: string;
+  isRecurringYearly: boolean;
+}
+
+export interface TimeSlot {
+  start: string; // ISO datetime
+  end: string; // ISO datetime
+}
+
+// ============ SLOT HOLD TYPES ============
+
+export type HoldStatus = 'active' | 'converted' | 'expired' | 'released';
+
+export interface SlotHold {
+  id: string;
+  meetingTypeId: string;
+  slotStart: string;
+  slotEnd: string;
+  heldByEmail: string;
+  status: HoldStatus;
+  expiresAt: string;
+}
+
+export interface CreateHoldData {
+  slotStart: string;
+  slotEnd: string;
+  email: string;
+  name?: string;
+  idempotencyKey: string;
+}
+
+// ============ BOOKING TYPES ============
+
+export type BookingStatus = 'confirmed' | 'canceled' | 'completed' | 'no_show';
+
+export interface Booking {
+  id: string;
+  meetingTypeId: string;
+  hostUserId: string;
+  slotStart: string;
+  slotEnd: string;
+  guestEmail: string;
+  guestName: string;
+  guestTimezone?: string;
+  guestNotes?: string;
+  status: BookingStatus;
+  ndaDocumentId?: string;
+  ndaSignedAt?: string;
+  createdAt: string;
+}
+
+export interface BookingWithMeetingType extends Booking {
+  meetingType: MeetingType;
+}
+
+export interface ConfirmBookingData {
+  holdId: string;
+  guestName: string;
+  guestTimezone: string;
+  guestNotes?: string;
+  idempotencyKey: string;
+}
+
+// ============ NDA/DOCUMENT TYPES ============
+
+export type DocumentStatus = 'pending' | 'sent' | 'signed' | 'expired' | 'revoked';
+
+export interface NDADocument {
+  id: string;
+  holdId?: string;
+  bookingId?: string;
+  status: DocumentStatus;
+  storageUrl?: string;
+  signerEmail: string;
+  externalEnvelopeId?: string;
+  sentAt?: string;
+  signedAt?: string;
+}
+
+export interface CreateNDAData {
+  holdId: string;
+  signerEmail: string;
+  signerName: string;
+}
+
+// ============ LOCATION TYPES ============
+// For map features
+
 export interface Location {
   latitude: number;
   longitude: number;
@@ -47,7 +190,9 @@ export interface LocationWithAddress extends Location {
   address: Address;
 }
 
-// Consultant Types
+// ============ CONSULTANT TYPES ============
+// Extended types for M&A consultant marketplace features
+
 export type ConsultantAvailability = 'available' | 'busy' | 'offline';
 
 export type Specialization =
@@ -60,7 +205,7 @@ export type Specialization =
   | 'post-merger-integration'
   | 'asset-sales';
 
-export interface Consultant {
+export interface ConsultantProfile {
   id: string;
   userId: string;
   bio: string;
@@ -74,7 +219,7 @@ export interface Consultant {
   profileImageUrl?: string;
 }
 
-export interface ConsultantWithUser extends Consultant {
+export interface ConsultantWithUser extends ConsultantProfile {
   user: User;
 }
 
@@ -82,66 +227,9 @@ export interface ConsultantWithDistance extends ConsultantWithUser {
   distance: number;
 }
 
-// Booking Types
-export type BookingStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled';
+// ============ PAYMENT TYPES ============
+// PayPal integration (replacing Stripe)
 
-export type NegotiationType =
-  | 'selling-business'
-  | 'buying-business'
-  | 'buying-asset'
-  | 'selling-asset'
-  | 'other';
-
-export type LocationType = 'onsite' | 'virtual';
-
-export type BookingDuration = 2 | 3;
-
-export interface NDADetails {
-  firstName: string;
-  lastName: string;
-  email: string;
-  signedAt: string;
-}
-
-export interface Booking {
-  id: string;
-  clientId: string;
-  consultantId: string;
-  status: BookingStatus;
-  negotiationType: NegotiationType;
-  locationType: LocationType;
-  startDate: string;
-  duration: BookingDuration;
-  location?: LocationWithAddress;
-  ndaDetails: NDADetails;
-  totalAmount: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BookingWithDetails extends Booking {
-  client: User;
-  consultant: ConsultantWithUser;
-}
-
-export interface CreateBookingData {
-  consultantId: string;
-  negotiationType: NegotiationType;
-  locationType: LocationType;
-  startDate: string;
-  duration: BookingDuration;
-  location?: LocationWithAddress;
-  ndaDetails: Omit<NDADetails, 'signedAt'>;
-  notes?: string;
-}
-
-// Payment Types
 export type PaymentStatus =
   | 'pending'
   | 'processing'
@@ -150,34 +238,21 @@ export type PaymentStatus =
   | 'cancelled'
   | 'refunded';
 
-export type PaymentMethod = 'card' | 'bank_transfer' | 'other';
-
 export interface Payment {
   id: string;
   bookingId: string;
   amount: number;
   currency: string;
   status: PaymentStatus;
-  stripePaymentIntentId?: string;
-  paymentMethod: PaymentMethod;
+  paypalOrderId?: string;
   createdAt: string;
   paidAt?: string;
 }
 
-export interface CreatePaymentIntentData {
-  bookingId: string;
-  amount: number;
-  currency?: string;
-}
+// ============ API RESPONSE TYPES ============
 
-export interface PaymentIntentResponse {
-  clientSecret: string;
-  paymentIntentId: string;
-}
-
-// API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
+export interface ApiResponse<T = unknown> {
+  success?: boolean;
   data?: T;
   error?: string;
   message?: string;
@@ -191,25 +266,42 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
-// WebSocket Event Types
-export interface WebSocketMessage<T = any> {
-  event: string;
-  data: T;
+// ============ REAL-TIME TYPES ============
+// SSE events from manow
+
+export interface SlotHeldEvent {
+  meetingTypeId: string;
+  slotStart: string;
+  slotEnd: string;
 }
 
-export interface ConsultantLocationUpdate {
-  consultantId: string;
-  location: Location;
-  availability: ConsultantAvailability;
+export interface SlotReleasedEvent {
+  meetingTypeId: string;
+  slotStart: string;
+  slotEnd: string;
 }
 
-export interface SubscribeToAreaData {
-  latitude: number;
-  longitude: number;
-  radius: number;
+export interface BookingConfirmedEvent {
+  bookingId: string;
+  meetingTypeId: string;
+  slotStart: string;
+  slotEnd: string;
 }
 
-// Query Parameters
+// ============ QUERY TYPES ============
+
+export interface GetSlotsQuery {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  timezone: string;
+}
+
+export interface GetBookingsQuery {
+  status?: BookingStatus;
+  limit?: number;
+  offset?: number;
+}
+
 export interface NearbyConsultantsQuery {
   lat: number;
   lng: number;
@@ -220,13 +312,8 @@ export interface NearbyConsultantsQuery {
   availability?: ConsultantAvailability;
 }
 
-export interface BookingsQuery {
-  status?: BookingStatus;
-  page?: number;
-  limit?: number;
-}
+// ============ UTILITY TYPES ============
 
-// Utility Types
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };

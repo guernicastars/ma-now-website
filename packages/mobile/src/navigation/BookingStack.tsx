@@ -1,22 +1,16 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { ServiceTypeScreen } from '../screens/booking/ServiceTypeScreen';
-import { DateSelectionScreen } from '../screens/booking/DateSelectionScreen';
-import { LocationTypeScreen } from '../screens/booking/LocationTypeScreen';
-import { LocationPickerScreen } from '../screens/booking/LocationPickerScreen';
-import { NDAFormScreen } from '../screens/booking/NDAFormScreen';
-import { PaymentScreen } from '../screens/booking/PaymentScreen';
-import { ConfirmationScreen } from '../screens/booking/ConfirmationScreen';
+import { SlotSelectionScreen } from '../screens/booking/SlotSelectionScreen';
+import { GuestInfoScreen } from '../screens/booking/GuestInfoScreen';
+import { NDASigningScreen } from '../screens/booking/NDASigningScreen';
+import { BookingConfirmationScreen } from '../screens/booking/BookingConfirmationScreen';
 import { Colors } from '../constants';
 
 export type BookingStackParamList = {
-  ServiceType: undefined;
-  DateSelection: undefined;
-  LocationType: undefined;
-  LocationPicker: undefined;
-  NDAForm: undefined;
-  Payment: undefined;
-  Confirmation: undefined;
+  SlotSelection: { slug: string };
+  GuestInfo: undefined;
+  NDASigning: undefined;
+  BookingConfirmation: undefined;
 };
 
 const Stack = createStackNavigator<BookingStackParamList>();
@@ -35,38 +29,23 @@ export const BookingStack: React.FC = () => {
       }}
     >
       <Stack.Screen
-        name="ServiceType"
-        component={ServiceTypeScreen}
-        options={{ title: 'Step 1: Service Type' }}
+        name="SlotSelection"
+        component={SlotSelectionScreen}
+        options={{ title: 'Select Time Slot' }}
       />
       <Stack.Screen
-        name="DateSelection"
-        component={DateSelectionScreen}
-        options={{ title: 'Step 2: Date & Duration' }}
+        name="GuestInfo"
+        component={GuestInfoScreen}
+        options={{ title: 'Your Details' }}
       />
       <Stack.Screen
-        name="LocationType"
-        component={LocationTypeScreen}
-        options={{ title: 'Step 3: Meeting Type' }}
+        name="NDASigning"
+        component={NDASigningScreen}
+        options={{ title: 'Sign NDA' }}
       />
       <Stack.Screen
-        name="LocationPicker"
-        component={LocationPickerScreen}
-        options={{ title: 'Step 3: Select Location' }}
-      />
-      <Stack.Screen
-        name="NDAForm"
-        component={NDAFormScreen}
-        options={{ title: 'Step 4: NDA Signing' }}
-      />
-      <Stack.Screen
-        name="Payment"
-        component={PaymentScreen}
-        options={{ title: 'Step 5: Payment' }}
-      />
-      <Stack.Screen
-        name="Confirmation"
-        component={ConfirmationScreen}
+        name="BookingConfirmation"
+        component={BookingConfirmationScreen}
         options={{
           title: 'Booking Confirmed',
           headerLeft: () => null,
